@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
+  BarChart3,
   Users,
   Inbox,
   PhoneCall,
@@ -18,6 +19,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "agents", label: "Agents", icon: Users },
   { id: "leads", label: "Enquiries", icon: Inbox },
   { id: "calls", label: "Calls", icon: PhoneCall },
