@@ -3,6 +3,7 @@ import type {
   AgentListResponse,
   AgentRead,
   AgentUpdate,
+  AnalyticsSummary,
   CallAttemptListResponse,
   CallAttemptRead,
   CurrentUser,
@@ -135,6 +136,10 @@ export function fetchCurrentUser(): Promise<CurrentUser> {
 
 export function fetchReadiness(): Promise<IntegrationReadiness> {
   return request<IntegrationReadiness>("/integrations/readiness");
+}
+
+export function fetchAnalytics(): Promise<AnalyticsSummary> {
+  return request<AnalyticsSummary>("/analytics/summary");
 }
 
 export function fetchAgents(limit = 100): Promise<AgentListResponse> {
