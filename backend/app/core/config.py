@@ -73,6 +73,8 @@ class Settings(BaseSettings):
     sarvam_stt_model: str = "saaras:v3"
     sarvam_tts_model: str = "bulbul:v3"
     sarvam_speaker: str = "anushka"
+    # Use Sarvam's low-latency WebSocket STT for phone audio (falls back to REST on any error).
+    sarvam_stt_streaming: bool = False
 
     llm_provider: Literal["mock", "openai_compatible"] = "mock"
     llm_base_url: str | None = None
