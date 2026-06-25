@@ -17,10 +17,13 @@ def _sqlite_connect_args(database_url: str) -> dict[str, bool]:
 @lru_cache(maxsize=1)
 def get_engine():
     settings = get_settings()
+    is_sqlite = settings.database_url.startswith("sqlite")
     return create_engine(
         settings.database_url,
         future=True,
         connect_args=_sqlite_connect_args(settings.database_url),
+        # pre-ping recycles dead pooled connections (important for Postgres in production)
+        pool_pre_ping=not is_sqlite,
     )
 
 
