@@ -13,6 +13,7 @@ from app.services.calls import dispatch_call_attempt_in_background
 from app.services.leads import ingest_meta_lead_event
 from app.services.meta import MetaLeadClient
 from app.services.providers import apply_exotel_status_callback
+from app.services.queue import enqueue_call_dispatch
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -61,10 +62,13 @@ async def receive_meta_webhook(
                 if result.call_attempt_id is not None:
                     call_attempt_ids.append(result.call_attempt_id)
                     if settings.auto_dispatch_calls:
-                        background_tasks.add_task(
-                            dispatch_call_attempt_in_background,
-                            result.call_attempt_id,
-                        )
+                        # Prefer the durable Redis (RQ) queue; fall back to an in-process
+                        # background task when Redis is not configured (local/dev).
+                        if not enqueue_call_dispatch(result.call_attempt_id):
+                            background_tasks.add_task(
+                                dispatch_call_attempt_in_background,
+                                result.call_attempt_id,
+                            )
             else:
                 duplicates += 1
 
