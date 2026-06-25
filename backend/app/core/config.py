@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     api_v1_prefix: str = "/api/v1"
     database_url: str = "sqlite:///./ai_voice.db"
+    # When set, call dispatch is enqueued to a durable Redis (RQ) queue instead of
+    # in-process background tasks. Leave empty for local/dev (in-process fallback).
+    redis_url: str | None = None
+    redis_queue_name: str = "voice"
     default_language: str = "te-IN"
     # NoDecode: keep pydantic-settings from JSON-decoding this from .env so the
     # comma-separated string form (as in .env.example) is handled by parse_cors_origins.
