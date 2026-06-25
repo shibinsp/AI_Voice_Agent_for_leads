@@ -212,6 +212,20 @@ export interface RetryFailedResponse {
   skipped_lead_ids: number[];
 }
 
+export interface AnalyticsSummary {
+  enquiries: { total: number; by_status: Record<string, number> };
+  calls: { total: number; by_status: Record<string, number> };
+  sessions: { total: number; completed: number };
+  qualification: {
+    total: number;
+    by_outcome: Record<string, number>;
+    genuine: number;
+    genuine_rate: number;
+    avg_score: number;
+  };
+  handoffs: { total: number; sent: number };
+}
+
 export interface EnquiryCreate {
   full_name: string;
   phone_number: string;
