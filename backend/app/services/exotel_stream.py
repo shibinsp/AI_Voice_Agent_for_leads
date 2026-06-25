@@ -146,21 +146,38 @@ class ExotelCallBridge:
             return None
         return start_voice_session(self.db, call_attempt_id=attempt.id)
 
-    def _transcribe_and_reply(self, utterance_pcm: bytes) -> str | None:
+    def _transcribe_utterance(self, utterance_pcm: bytes, language: str) -> tuple[str, float | None]:
+        # Prefer Sarvam streaming STT (low latency) when enabled; fall back to REST on any error.
+        if self.settings.sarvam_stt_streaming and self.settings.sarvam_api_key:
+            try:
+                from app.providers.speech.sarvam_stream import transcribe_streaming_sync
+
+                text = transcribe_streaming_sync(
+                    self.settings,
+                    pcm=utterance_pcm,
+                    sample_rate=self.settings.phone_media_sample_rate,
+                    language=language,
+                )
+                return text.strip(), None
+            except Exception:
+                pass  # fall through to REST
         wav = wrap_pcm_as_wav(utterance_pcm, sample_rate=self.settings.phone_media_sample_rate)
-        transcription = self.speech.transcribe(
+        result = self.speech.transcribe(
             audio_base64=b64encode(wav).decode("ascii"),
             mime_type="audio/wav",
-            language=self._language(),
+            language=language,
         )
-        text = (transcription.text or "").strip()
+        return (result.text or "").strip(), result.confidence
+
+    def _transcribe_and_reply(self, utterance_pcm: bytes) -> str | None:
+        text, confidence = self._transcribe_utterance(utterance_pcm, self._language())
         if not text:
             return None
         result = process_stream_text(
             self.db,
             session_id=self.session_id,
             lead_text=text,
-            confidence=transcription.confidence,
+            confidence=confidence,
         )
         return result["agent_text"]
 
