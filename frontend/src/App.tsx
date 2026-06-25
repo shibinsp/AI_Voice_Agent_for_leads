@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ActivityStream } from "./components/ActivityStream";
 import { AgentRoster } from "./components/AgentRoster";
 import { AgentStudio } from "./components/AgentStudio";
+import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { CallAttemptsTable } from "./components/CallAttemptsTable";
 import { EnquiryLinkCard } from "./components/EnquiryLinkCard";
 import { EnquiryPage } from "./components/EnquiryPage";
@@ -153,6 +154,7 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
     callAttemptsQuery,
     voiceSessionsQuery,
     handoffsQuery,
+    analyticsQuery,
     dispatchMutation,
     runDemoSessionMutation,
     retryFailedMutation,
@@ -260,6 +262,8 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
               activeAgents={activeAgents}
             />
           </div>
+
+          <AnalyticsPanel data={analyticsQuery.data} isLoading={analyticsQuery.isLoading} />
 
           <section className="dashboard-grid">
         <section className="dashboard-main">
