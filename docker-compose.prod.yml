@@ -1,15 +1,41 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: voice
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voice}
+      POSTGRES_DB: voice
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voice"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
     env_file:
       - ./.env.production
     environment:
-      DATABASE_URL: sqlite:////data/ai_voice.db
-    volumes:
-      - backend-data:/data
+      DATABASE_URL: postgresql+psycopg://voice:${POSTGRES_PASSWORD:-voice}@db:5432/voice
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -23,6 +49,21 @@ services:
       retries: 3
       start_period: 15s
 
+  worker:
+    build:
+      context: ./backend
+    env_file:
+      - ./.env.production
+    environment:
+      DATABASE_URL: postgresql+psycopg://voice:${POSTGRES_PASSWORD:-voice}@db:5432/voice
+      REDIS_URL: redis://redis:6379/0
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "voice"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend
@@ -35,4 +76,4 @@ services:
         condition: service_healthy
 
 volumes:
-  backend-data:
+  db-data:
