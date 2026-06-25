@@ -268,6 +268,21 @@ Notes / current limits:
 - The browser web-call (`/enquiry`, "Live call") still works key-free for demos; the phone path is
   the production channel.
 
+## Postgres & Redis (production scale)
+
+The production compose stack runs **Postgres** (durable multi-instance database) and **Redis**
+with an **RQ worker** (durable call-dispatch queue) alongside the backend:
+
+- Set `DATABASE_URL=postgresql+psycopg://user:password@host:5432/db` to use Postgres (local/dev
+  defaults to SQLite — no change needed). The `psycopg` driver is in `requirements.txt`.
+- Set `REDIS_URL=redis://host:6379/0` to enqueue call dispatch onto a durable RQ queue
+  (`app/services/queue.py`); run a worker with `rq worker --url $REDIS_URL voice`. When
+  `REDIS_URL` is empty, dispatch falls back to in-process FastAPI background tasks (local/dev).
+
+`docker-compose.prod.yml` wires `db` (postgres:16), `redis` (redis:7), the `backend`, and a
+`worker` service automatically. Schema is created on startup via `create_all`; managed
+migrations (Alembic) remain a follow-up.
+
 ## Production deployment
 
 The repo includes Docker production scaffolding:
