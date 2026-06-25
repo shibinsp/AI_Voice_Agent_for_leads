@@ -4,6 +4,7 @@ import {
   createAgent,
   dispatchCallAttempt,
   fetchAgents,
+  fetchAnalytics,
   fetchCallAttempts,
   fetchHandoffs,
   fetchHealth,
@@ -24,6 +25,7 @@ const LEADS_QUERY_KEY = ["leads"] as const;
 const ATTEMPTS_QUERY_KEY = ["call-attempts"] as const;
 const VOICE_SESSIONS_QUERY_KEY = ["voice-sessions"] as const;
 const HANDOFFS_QUERY_KEY = ["handoffs"] as const;
+const ANALYTICS_QUERY_KEY = ["analytics"] as const;
 
 export function useVoiceDashboard() {
   const queryClient = useQueryClient();
@@ -75,6 +77,13 @@ export function useVoiceDashboard() {
     queryFn: () => fetchHandoffs(100),
     retry: 1,
     refetchInterval: 7_000,
+  });
+
+  const analyticsQuery = useQuery({
+    queryKey: ANALYTICS_QUERY_KEY,
+    queryFn: fetchAnalytics,
+    retry: 1,
+    refetchInterval: 10_000,
   });
 
   const dispatchMutation = useMutation({
@@ -145,6 +154,7 @@ export function useVoiceDashboard() {
       queryClient.invalidateQueries({ queryKey: ATTEMPTS_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: VOICE_SESSIONS_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: HANDOFFS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: ANALYTICS_QUERY_KEY }),
     ]);
   }
 
@@ -156,6 +166,7 @@ export function useVoiceDashboard() {
     callAttemptsQuery,
     voiceSessionsQuery,
     handoffsQuery,
+    analyticsQuery,
     dispatchMutation,
     runDemoSessionMutation,
     retryFailedMutation,
