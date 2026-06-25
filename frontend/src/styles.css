@@ -667,9 +667,11 @@ time,
 .dashboard-side {
   display: grid;
   gap: 22px;
+  min-width: 0; /* allow grid items to shrink so wide tables scroll inside, not stretch the page */
 }
 
 .panel {
+  min-width: 0; /* contain wide children (tables) within the column width */
   padding: 24px;
   border-radius: var(--radius-lg);
   background: var(--panel);
@@ -1355,7 +1357,8 @@ time,
   .hero-panel,
   .dashboard-grid,
   .ops-strip {
-    grid-template-columns: 1fr;
+    /* minmax(0,1fr) (not 1fr) so a wide child can't push the column past the viewport */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-metrics,
@@ -1367,6 +1370,10 @@ time,
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+    /* When the bar wraps to a tall stacked block, sticky makes its translucent
+       background overlap the page content on scroll — pin it to the top of the page instead. */
+    position: relative;
+    top: auto;
   }
 
   .topbar-actions {
