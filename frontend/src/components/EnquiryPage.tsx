@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Mic, PhoneOff, Send } from "lucide-react";
 
 import { submitEnquiry } from "../lib/api";
@@ -20,16 +20,33 @@ function readSource(): "linkedin" | "instagram" | "other" {
   return src === "linkedin" || src === "instagram" ? src : "other";
 }
 
+function EnquirySteps({ step }: { step: 1 | 2 | 3 }) {
+  const labels = ["Details", "Talk", "Done"];
+  return (
+    <div className="enquiry-steps">
+      {labels.map((label, i) => (
+        <Fragment key={label}>
+          {i > 0 ? <span className="enquiry-step-sep" /> : null}
+          <span className={`enquiry-step ${step >= i + 1 ? "is-active" : ""}`}>
+            <span className="enquiry-step-dot">{i + 1}</span>
+            {label}
+          </span>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
 export function EnquiryPage() {
   const [started, setStarted] = useState<EnquiryStartResponse | null>(null);
+  const [done, setDone] = useState(false);
 
   return (
     <div className="enquiry-shell">
-      <div className="background-blur background-blur--one" />
-      <div className="background-blur background-blur--two" />
       <div className="enquiry-card">
+        <EnquirySteps step={done ? 3 : started ? 2 : 1} />
         {started ? (
-          <EnquiryCall start={started} />
+          <EnquiryCall start={started} onDone={() => setDone(true)} />
         ) : (
           <EnquiryForm onStarted={setStarted} />
         )}
@@ -115,15 +132,20 @@ function EnquiryForm({ onStarted }: EnquiryFormProps) {
         <Send size={16} />
         {submitting ? "Starting your call…" : "Start enquiry call"}
       </button>
+      <p className="enquiry-consent">
+        By starting, you agree to be contacted by phone about your enquiry and to this call being
+        recorded for quality.
+      </p>
     </form>
   );
 }
 
 interface EnquiryCallProps {
   start: EnquiryStartResponse;
+  onDone: () => void;
 }
 
-function EnquiryCall({ start }: EnquiryCallProps) {
+function EnquiryCall({ start, onDone }: EnquiryCallProps) {
   const connect = useCallback(
     async (): Promise<VoiceCallConnection> => ({
       sessionId: start.session_id,
@@ -136,6 +158,10 @@ function EnquiryCall({ start }: EnquiryCallProps) {
 
   const { phase, turns, error, speechSupported, startListening, stopListening, endCall } =
     useVoiceCall(connect);
+
+  useEffect(() => {
+    if (phase === "completed") onDone();
+  }, [phase, onDone]);
 
   if (phase === "completed") {
     return (
