@@ -76,3 +76,10 @@ async def dispatch_call_attempt_in_background(attempt_id: int) -> None:
     finally:
         db.close()
 
+
+def dispatch_call_attempt_job(attempt_id: int) -> None:
+    """Synchronous entry point for the RQ worker (runs the async dispatch to completion)."""
+    import asyncio
+
+    asyncio.run(dispatch_call_attempt_in_background(attempt_id))
+
