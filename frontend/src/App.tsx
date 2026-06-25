@@ -1,5 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
-import { LogOut, RadioTower, Search, Sparkles } from "lucide-react";
+import { Menu, Search, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ActivityStream } from "./components/ActivityStream";
@@ -10,13 +10,13 @@ import { EnquiryLinkCard } from "./components/EnquiryLinkCard";
 import { EnquiryPage } from "./components/EnquiryPage";
 import { HealthCard } from "./components/HealthCard";
 import { HandoffPanel } from "./components/HandoffPanel";
-import { HeroPanel } from "./components/HeroPanel";
 import { IntegrationReadiness } from "./components/IntegrationReadiness";
 import { LeadTable } from "./components/LeadTable";
 import { LiveVoiceDemo } from "./components/LiveVoiceDemo";
 import { LoginPage } from "./components/LoginPage";
 import { OperationsStrip } from "./components/OperationsStrip";
 import { Panel } from "./components/Panel";
+import { Sidebar } from "./components/Sidebar";
 import { VoiceSessionsPanel } from "./components/VoiceSessionsPanel";
 import { WebhookSimulator } from "./components/WebhookSimulator";
 import {
@@ -143,6 +143,7 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
   const [searchText, setSearchText] = useState("");
   const deferredSearchText = useDeferredValue(searchText);
   const [liveAttemptId, setLiveAttemptId] = useState<number | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
 
   const {
     healthQuery,
@@ -175,7 +176,6 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
     ["queued", "initiated", "in_progress"].includes(attempt.status),
   ).length;
   const queuedCalls = attempts.filter((attempt) => attempt.status === "queued").length;
-  const connectedCalls = attempts.filter((attempt) => attempt.status === "completed").length;
   const failedCalls = attempts.filter((attempt) =>
     ["busy", "no_answer", "failed"].includes(attempt.status),
   ).length;
@@ -191,9 +191,6 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
         readinessQuery.data.handoff,
       ].filter(Boolean).length
     : 0;
-  const failureRate =
-    attempts.length === 0 ? "0%" : `${Math.round((failedCalls / attempts.length) * 100)}%`;
-
   const isSyncing =
     healthQuery.isFetching ||
     agentsQuery.isFetching ||
@@ -207,25 +204,28 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
       : `${filteredLeads.length} matching "${deferredSearchText}"`;
 
   return (
-    <div className="app-shell">
-      <div className="background-blur background-blur--one" />
-      <div className="background-blur background-blur--two" />
+    <div className="app-layout">
+      <Sidebar
+        username={username}
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        onLogout={onLogout}
+      />
 
-      <header className="topbar">
-        <div className="topbar-brand">
-          <div className="brand-mark">
-            <RadioTower size={20} />
-          </div>
-          <div>
-            <span className="topbar-label">AI Voice Command Center</span>
+      <div className="app-main">
+        <header className="app-topbar">
+          <button
+            className="ghost-button topbar-menu"
+            type="button"
+            onClick={() => setNavOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={18} />
+          </button>
+          <div className="app-topbar-title">
             <h1>Lead response operations</h1>
-            <p className="topbar-subtitle">
-              Monitor agents, callback queues, readiness, and handoffs from one production console.
-            </p>
+            {isSyncing ? <span className="sync-indicator">Syncing…</span> : null}
           </div>
-        </div>
-
-        <div className="topbar-actions">
           <label className="search-field" htmlFor="search-input">
             <Search size={16} />
             <input
@@ -237,54 +237,31 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
                   setSearchText(event.target.value);
                 })
               }
-              placeholder="Search leads, phone numbers, scripts..."
+              placeholder="Search enquiries, phone, scripts…"
             />
           </label>
+          {healthQuery.data ? (
+            <span className="env-badge">{healthQuery.data.environment}</span>
+          ) : null}
           <button className="ghost-button" type="button" onClick={() => void refreshAll()}>
-            <Sparkles size={16} />
-            Refresh All
+            <Sparkles size={15} />
+            Refresh
           </button>
-          <div className="session-pill" aria-label="Current signed-in user">
-            <span>Signed in</span>
-            <strong>{username ?? "operator"}</strong>
+        </header>
+
+        <main className="app-content">
+          <div id="overview">
+            <OperationsStrip
+              activeCalls={activeCalls}
+              queuedCalls={queuedCalls}
+              failedCalls={failedCalls}
+              readyIntegrations={readyIntegrations}
+              totalIntegrations={7}
+              activeAgents={activeAgents}
+            />
           </div>
-          <button className="ghost-button" type="button" onClick={onLogout}>
-            <LogOut size={16} />
-            Logout
-          </button>
-        </div>
-      </header>
 
-      <nav className="product-nav" aria-label="Dashboard sections">
-        <a href="#overview">Overview</a>
-        <a href="#agents">Agents</a>
-        <a href="#leads">Leads</a>
-        <a href="#calls">Calls</a>
-        <a href="#sessions">Sessions</a>
-        <a href="#integrations">Integrations</a>
-      </nav>
-
-      <OperationsStrip
-        activeCalls={activeCalls}
-        queuedCalls={queuedCalls}
-        failedCalls={failedCalls}
-        readyIntegrations={readyIntegrations}
-        totalIntegrations={7}
-        activeAgents={activeAgents}
-      />
-
-      <HeroPanel
-        id="overview"
-        totalLeads={leadsQuery.data?.total ?? 0}
-        activeCalls={activeCalls}
-        connectedCalls={connectedCalls}
-        failureRate={failureRate}
-        backendUrl={getApiBaseUrl()}
-        isSyncing={isSyncing}
-        isHealthy={Boolean(healthQuery.data)}
-      />
-
-      <main className="dashboard-grid">
+          <section className="dashboard-grid">
         <section className="dashboard-main">
           <AgentRoster
             agents={filteredAgents}
@@ -334,10 +311,12 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
             error={healthQuery.error instanceof Error ? healthQuery.error.message : undefined}
           />
 
-          <IntegrationReadiness
-            readiness={readinessQuery.data}
-            isLoading={readinessQuery.isLoading}
-          />
+          <div id="integrations">
+            <IntegrationReadiness
+              readiness={readinessQuery.data}
+              isLoading={readinessQuery.isLoading}
+            />
+          </div>
 
           <AgentStudio
             onCreate={(payload) => createAgentMutation.mutate(payload)}
@@ -376,7 +355,9 @@ function DashboardApp({ username, onLogout }: DashboardAppProps) {
 
           <ActivityStream leads={leads} attempts={attempts} />
         </aside>
-      </main>
+          </section>
+        </main>
+      </div>
 
       {liveAttemptId !== null ? (
         <LiveVoiceDemo
